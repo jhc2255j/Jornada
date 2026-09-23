@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Control de Horas</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Control Horas">
+<meta name="theme-color" content="#0d0f0e">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230d0f0e'/%3E%3Ccircle cx='90' cy='96' r='54' fill='none' stroke='%233ddc84' stroke-width='9'/%3E%3Cline x1='90' y1='96' x2='90' y2='58' stroke='%233ddc84' stroke-width='9' stroke-linecap='round'/%3E%3Cline x1='90' y1='96' x2='118' y2='108' stroke='%233ddc84' stroke-width='9' stroke-linecap='round'/%3E%3Crect x='68' y='22' width='44' height='14' rx='7' fill='%233ddc84'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0d0f0e; --panel:#161918; --panel2:#1e2220; --line:#2a2f2c;
+  --text:#eef1ee; --muted:#8b948e;
+  --go:#3ddc84; --go-d:#1f8f52; --stop:#ff5c5c; --stop-d:#b8342f;
+  --amber:#f5b942; --blue:#5aa9e6;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;min-height:100%;}
+h1,h2,h3,.brand{font-family:-apple-system,'SF Pro Display',system-ui,sans-serif;}
+.wrap{max-width:480px;margin:0 auto;padding:18px 16px 40px;}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.brand{font-size:20px;font-weight:800;letter-spacing:-0.02em;}
+.brand span{color:var(--go);}
+.gear{background:none;border:1px solid var(--line);color:var(--muted);width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;}
+
+.clockcard{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:20px;padding:22px 18px;text-align:center;margin-bottom:16px;}
+.clockcard .status{font-size:13px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;}
+.clockcard .timer{font-size:42px;font-weight:800;font-family:-apple-system,'SF Pro Display',system-ui,sans-serif;letter-spacing:-0.02em;margin-bottom:4px;}
+.clockcard .subtimer{font-size:13px;color:var(--muted);margin-bottom:18px;}
+.bigbtn{width:150px;height:150px;border-radius:50%;border:none;font-family:-apple-system,'SF Pro Display',system-ui,sans-serif;font-weight:700;font-size:19px;color:#062012;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s ease;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.bigbtn:active{transform:scale(.96);}
+.bigbtn.go{background:radial-gradient(circle at 35% 30%,#5cf0a0,var(--go));}
+.bigbtn.stop{background:radial-gradient(circle at 35% 30%,#ff8a8a,var(--stop));color:#2b0a0a;}
+.rowbtns{display:flex;gap:10px;justify-content:center;margin-top:14px;}
+.pillbtn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:9px 16px;border-radius:999px;font-size:13px;cursor:pointer;font-weight:600;}
+.pillbtn.active{border-color:var(--amber);color:var(--amber);}
+.pillbtn:disabled{opacity:.4;}
+
+.summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px;}
+.sumbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 8px;text-align:center;}
+.sumbox .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.sumbox .val{font-size:17px;font-weight:700;font-family:-apple-system,'SF Pro Display',system-ui,sans-serif;}
+.sumbox .val.over{color:var(--amber);}
+
+.section{margin-bottom:20px;}
+.section h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;justify-content:space-between;}
+.monthnav{display:flex;align-items:center;gap:10px;}
+.monthnav button{background:var(--panel2);border:1px solid var(--line);color:var(--text);width:28px;height:28px;border-radius:8px;cursor:pointer;}
+.monthnav .mlabel{font-size:14px;color:var(--muted);min-width:110px;text-align:center;text-transform:capitalize;}
+
+.cal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.calgrid .dow{font-size:10px;color:var(--muted);text-align:center;padding-bottom:4px;text-transform:uppercase;}
+.day{aspect-ratio:1;border-radius:8px;background:var(--panel2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;cursor:pointer;border:1px solid transparent;position:relative;}
+.day.empty{background:transparent;cursor:default;}
+.day .n{font-weight:600;}
+.day .h{font-size:8.5px;color:var(--go);margin-top:1px;}
+.day.today{border-color:var(--amber);}
+.day.has{background:#16241c;}
+.day.over .h{color:var(--amber);}
+.day .badges{position:absolute;top:2px;right:3px;display:flex;gap:2px;font-size:7px;}
+.entry .l .tags{margin-top:2px;display:flex;gap:5px;}
+.entry .l .tag{font-size:10px;padding:1px 6px;border-radius:999px;border:1px solid var(--line);}
+.entry .l .tag.dieta{color:var(--amber);border-color:var(--amber);}
+.entry .l .tag.domingo{color:var(--blue);border-color:var(--blue);}
+
+.list{display:flex;flex-direction:column;gap:8px;}
+.entry{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;font-size:13px;}
+.entry .l div:first-child{font-weight:600;}
+.entry .l div:last-child{color:var(--muted);font-size:11px;margin-top:2px;}
+.entry .r{display:flex;gap:6px;}
+.icobtn{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:4px;}
+.empty-msg{color:var(--muted);font-size:13px;text-align:center;padding:20px 0;}
+
+.exportrow{display:flex;gap:10px;}
+.exportrow button{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:12px;border-radius:12px;font-weight:600;font-size:13px;cursor:pointer;}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;z-index:50;}
+.overlay.open{display:flex;}
+.sheet{background:var(--panel);border-top-left-radius:20px;border-top-right-radius:20px;padding:18px 18px calc(24px + env(safe-area-inset-bottom,0px));width:100%;max-height:85vh;overflow-y:auto;border-top:1px solid var(--line);}
+.sheet h3{margin:0 0 14px;font-size:16px;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
+.field input,.field select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px;font-size:14px;font-family:inherit;}
+.sheetbtns{display:flex;gap:10px;margin-top:16px;}
+.sheetbtns button{flex:1;padding:11px;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-family:-apple-system,'SF Pro Display',system-ui,sans-serif;font-size:14px;}
+.btn-save{background:var(--go);color:#062012;}
+.btn-cancel{background:var(--panel2);color:var(--text);border:1px solid var(--line) !important;}
+.btn-del{background:transparent;color:var(--stop);border:1px solid var(--stop) !important;}
+.closebar{width:36px;height:4px;background:var(--line);border-radius:2px;margin:0 auto 14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">⏱ Control<span>Horas</span></div>
+    <button class="gear" id="btnSettings">⚙</button>
+  </div>
+
+  <div class="clockcard">
+    <div class="status" id="status">Fuera de turno</div>
+    <div class="timer" id="timer">00:00:00</div>
+    <div class="subtimer" id="subtimer">Hoy: 0h 00m</div>
+    <button class="bigbtn go" id="btnToggle">Entrada</button>
+    <div class="rowbtns">
+      <button class="pillbtn" id="btnManual">✏️ Añadir manual</button>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="sumbox"><div class="lbl">Hoy</div><div class="val" id="sumDay">0h 00m</div></div>
+    <div class="sumbox"><div class="lbl">Semana</div><div class="val" id="sumWeek">0h 00m</div></div>
+    <div class="sumbox"><div class="lbl">Mes</div><div class="val" id="sumMonth">0h 00m</div></div>
+  </div>
+  <div class="summary" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="sumbox"><div class="lbl">🍽 Dietas (mes)</div><div class="val" id="sumDietas">0</div></div>
+    <div class="sumbox"><div class="lbl">🔵 H. domingo</div><div class="val" id="sumDomingo">0h 00m</div></div>
+    <div class="sumbox"><div class="lbl">➕ H. extra (mes)</div><div class="val" id="sumExtra">0h 00m</div></div>
+  </div>
+
+  <div class="section">
+    <h2>Nómina (periodo <span id="payrollLabel"></span>)</h2>
+    <div class="summary" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="sumbox"><div class="lbl">Horas totales</div><div class="val" id="pTotal">0h 00m</div></div>
+      <div class="sumbox"><div class="lbl">Horas extra</div><div class="val" id="pExtra">0h 00m</div></div>
+      <div class="sumbox"><div class="lbl">🍽 Dietas</div><div class="val" id="pDietas">0</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>
+      Calendario
+      <div class="monthnav">
+        <button id="prevM">‹</button>
+        <span class="mlabel" id="mLabel"></span>
+        <button id="nextM">›</button>
+      </div>
+    </h2>
+    <div class="cal">
+      <div class="calgrid" id="calGrid"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 id="dayTitle">Registros de hoy</h2>
+    <div class="list" id="dayList"></div>
+  </div>
+
+  <div class="section">
+    <h2>Exportar</h2>
+    <div class="exportrow">
+      <button id="btnXlsx">📊 Excel</button>
+      <button id="btnPdf">📄 PDF</button>
+      <button id="btnBackup">💾 Copia</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings sheet -->
+<div class="overlay" id="ovSettings">
+  <div class="sheet">
+    <div class="closebar"></div>
+    <h3>Ajustes</h3>
+    <div class="field"><label>Jornada habitual diaria (horas)</label><input type="number" id="cfgJornada" step="0.25" min="0"></div>
+    <div class="sheetbtns">
+      <button class="btn-cancel" id="cancelSettings">Cerrar</button>
+      <button class="btn-save" id="saveSettings">Guardar</button>
+    </div>
+    <div class="sheetbtns"><button class="btn-del" id="btnReset" style="width:100%">Borrar todos los registros</button></div>
+  </div>
+</div>
+
+<!-- Entry edit/manual sheet -->
+<div class="overlay" id="ovEntry">
+  <div class="sheet">
+    <div class="closebar"></div>
+    <h3 id="entryTitle">Editar registro</h3>
+    <input type="hidden" id="entryId">
+    <div class="field"><label>Fecha</label><input type="date" id="entryDate"></div>
+    <div class="field"><label>Hora de entrada</label><input type="time" id="entryStart"></div>
+    <div class="field"><label>Hora de salida</label><input type="time" id="entryEnd"></div>
+    <div class="sheetbtns">
+      <button class="btn-del" id="entryDelete">Borrar</button>
+      <button class="btn-save" id="entrySave">Guardar</button>
+    </div>
+    <div class="sheetbtns"><button class="btn-cancel" id="entryCancel" style="width:100%">Cancelar</button></div>
+  </div>
+</div>
+
+<script>
+const LS_ENTRIES='ch_entries', LS_ACTIVE='ch_active', LS_CFG='ch_config';
+let entries = JSON.parse(localStorage.getItem(LS_ENTRIES)||'[]');
+let active = JSON.parse(localStorage.getItem(LS_ACTIVE)||'null'); // {start}
+let cfg = JSON.parse(localStorage.getItem(LS_CFG)||'{"jornada":8}');
+let viewDate = new Date(); viewDate.setDate(1);
+let selectedDay = fmtDate(new Date());
+
+function save(){ localStorage.setItem(LS_ENTRIES, JSON.stringify(entries)); }
+function saveActive(){ localStorage.setItem(LS_ACTIVE, JSON.stringify(active)); }
+function saveCfg(){ localStorage.setItem(LS_CFG, JSON.stringify(cfg)); }
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function pad(n){return String(n).padStart(2,'0');}
+function hm(mins){ const h=Math.floor(mins/60), m=Math.round(mins%60); return h+"h "+pad(m)+"m"; }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+function entryMinutes(e){
+  const [sh,sm]=e.start.split(':').map(Number), [eh,em]=e.end.split(':').map(Number);
+  let mins = (eh*60+em)-(sh*60+sm);
+  if(mins<0) mins=0;
+  return Math.max(0,mins);
+}
+function dayTotal(dateStr){ return entries.filter(e=>e.date===dateStr).reduce((s,e)=>s+entryMinutes(e),0); }
+function weekTotal(dateStr){
+  const d=new Date(dateStr+'T00:00:00'); const day=(d.getDay()+6)%7; // Monday=0
+  const monday=new Date(d); monday.setDate(d.getDate()-day);
+  let total=0;
+  for(let i=0;i<7;i++){ const dd=new Date(monday); dd.setDate(monday.getDate()+i); total+=dayTotal(fmtDate(dd)); }
+  return total;
+}
+function monthTotal(y,m){
+  return entries.filter(e=>{const d=new Date(e.date+'T00:00:00'); return d.getFullYear()===y && d.getMonth()===m;})
+    .reduce((s,e)=>s+entryMinutes(e),0);
+}
+
+// --- Dietas / horas a precio de domingo ---
+function consecutiveStreakEnding(dateStr){
+  let n=0; let cur=new Date(dateStr+'T00:00:00');
+  while(dayTotal(fmtDate(cur))>0){ n++; cur.setDate(cur.getDate()-1); }
+  return n;
+}
+function dayClassify(dateStr){
+  const totalMin = dayTotal(dateStr);
+  if(totalMin<=0) return {totalMin:0, isSunday:false, isSixthSat:false, allExtra:false, domingoMin:0, dieta:false};
+  const d = new Date(dateStr+'T00:00:00');
+  const dow = d.getDay(); // 0=domingo, 6=sábado
+  const isSunday = dow===0;
+  const isSaturday = dow===6;
+  const isSixthSat = isSaturday && consecutiveStreakEnding(dateStr)===6;
+  const allExtra = isSunday || isSixthSat;
+  let domingoMin = 0;
+  if(isSunday) domingoMin = totalMin; // domingo real: todas las horas desde la primera
+  else if(isSaturday) domingoMin = Math.max(0, totalMin - 8*60); // sábado normal o 6º día: solo lo que pasa de 8h
+  const dieta = !allExtra && totalMin > 9*60;
+  return {totalMin, isSunday, isSaturday, isSixthSat, allExtra, domingoMin, dieta};
+}
+function dayExtraMinutes(c){
+  if(c.totalMin<=0) return 0;
+  if(c.allExtra) return c.totalMin;
+  if(c.isSaturday) return c.domingoMin; // solo lo que pasa de 8h
+  return Math.max(0, c.totalMin - cfg.jornada*60);
+}
+function monthDietasYDomingo(y,m){
+  const days = new Set(entries.filter(e=>{const d=new Date(e.date+'T00:00:00'); return d.getFullYear()===y && d.getMonth()===m;}).map(e=>e.date));
+  let dietas=0, domingoMin=0, extraMin=0;
+  days.forEach(ds=>{ const c=dayClassify(ds); if(c.dieta) dietas++; domingoMin+=c.domingoMin; extraMin+=dayExtraMinutes(c); });
+  return {dietas, domingoMin, extraMin};
+}
+// --- Periodo de nómina: del 26 al 25 del mes siguiente ---
+function payrollPeriod(refDate){
+  const d = new Date(refDate); d.setHours(0,0,0,0);
+  let start, end;
+  if(d.getDate()>=26){ start=new Date(d.getFullYear(), d.getMonth(), 26); end=new Date(d.getFullYear(), d.getMonth()+1, 25); }
+  else { start=new Date(d.getFullYear(), d.getMonth()-1, 26); end=new Date(d.getFullYear(), d.getMonth(), 25); }
+  return {start, end};
+}
+function payrollTotals(refDate){
+  const {start,end}=payrollPeriod(refDate);
+  let totalMin=0, extraMin=0, dietas=0;
+  const days = new Set(entries.filter(e=>{const d=new Date(e.date+'T00:00:00'); return d>=start && d<=end;}).map(e=>e.date));
+  days.forEach(ds=>{ const c=dayClassify(ds); totalMin+=c.totalMin; extraMin+=dayExtraMinutes(c); if(c.dieta) dietas++; });
+  return {start,end,totalMin,extraMin,dietas};
+}
+
+function render(){
+  renderClock();
+  renderSummary();
+  renderCalendar();
+  renderDayList();
+}
+
+function renderClock(){
+  const btn=document.getElementById('btnToggle');
+  const status=document.getElementById('status');
+  if(active){
+    btn.textContent='Salida'; btn.classList.remove('go'); btn.classList.add('stop');
+    status.textContent='Trabajando';
+  } else {
+    btn.textContent='Entrada'; btn.classList.remove('stop'); btn.classList.add('go');
+    status.textContent='Fuera de turno';
+  }
+}
+
+function liveWorkedSeconds(){
+  if(!active) return 0;
+  const now=Date.now();
+  return Math.max(0, Math.floor((now-active.start)/1000));
+}
+
+function tick(){
+  if(active){
+    const s=liveWorkedSeconds();
+    const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+    document.getElementById('timer').textContent = pad(h)+':'+pad(m)+':'+pad(sec);
+    const today=fmtDate(new Date());
+    const base=dayTotal(today);
+    document.getElementById('subtimer').textContent = 'Hoy: '+hm(base + s/60);
+  } else {
+    document.getElementById('timer').textContent='00:00:00';
+    document.getElementById('subtimer').textContent='Hoy: '+hm(dayTotal(fmtDate(new Date())));
+  }
+}
+
+function renderSummary(){
+  const today=fmtDate(new Date());
+  const dMin=dayTotal(today)+(active?liveWorkedSeconds()/60:0);
+  const wMin=weekTotal(today)+(active?liveWorkedSeconds()/60:0);
+  const now=new Date();
+  const mMin=monthTotal(now.getFullYear(), now.getMonth())+(active?liveWorkedSeconds()/60:0);
+  document.getElementById('sumDay').textContent=hm(dMin);
+  document.getElementById('sumWeek').textContent=hm(wMin);
+  const mEl=document.getElementById('sumMonth');
+  mEl.textContent=hm(mMin);
+  const workdays = new Set(entries.filter(e=>{const d=new Date(e.date+'T00:00:00');return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}).map(e=>e.date)).size;
+  mEl.classList.toggle('over', mMin > workdays*cfg.jornada*60);
+  const dm = monthDietasYDomingo(now.getFullYear(), now.getMonth());
+  document.getElementById('sumDietas').textContent = dm.dietas;
+  document.getElementById('sumDomingo').textContent = hm(dm.domingoMin);
+  document.getElementById('sumExtra').textContent = hm(dm.extraMin);
+
+  const p = payrollTotals(now);
+  const fmtShort = dd => pad(dd.getDate())+'/'+pad(dd.getMonth()+1);
+  document.getElementById('payrollLabel').textContent = fmtShort(p.start)+' – '+fmtShort(p.end);
+  document.getElementById('pTotal').textContent = hm(p.totalMin);
+  document.getElementById('pExtra').textContent = hm(p.extraMin);
+  document.getElementById('pDietas').textContent = p.dietas;
+}
+
+const DOW=['L','M','X','J','V','S','D'];
+const MONTHS=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function renderCalendar(){
+  document.getElementById('mLabel').textContent = MONTHS[viewDate.getMonth()]+' '+viewDate.getFullYear();
+  const grid=document.getElementById('calGrid');
+  grid.innerHTML='';
+  DOW.forEach(d=>{ const el=document.createElement('div'); el.className='dow'; el.textContent=d; grid.appendChild(el); });
+  const y=viewDate.getFullYear(), m=viewDate.getMonth();
+  const first=new Date(y,m,1);
+  let startOffset=(first.getDay()+6)%7;
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  for(let i=0;i<startOffset;i++){ const el=document.createElement('div'); el.className='day empty'; grid.appendChild(el); }
+  const todayStr=fmtDate(new Date());
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = y+'-'+pad(m+1)+'-'+pad(d);
+    const mins=dayTotal(dateStr);
+    const c = mins>0 ? dayClassify(dateStr) : null;
+    const el=document.createElement('div');
+    el.className='day'+(dateStr===todayStr?' today':'')+(mins>0?' has':'')+(mins>cfg.jornada*60?' over':'');
+    let badges='';
+    if(c){ if(c.dieta) badges+='🍽'; if(c.domingoMin>0) badges+='🔵'; }
+    el.innerHTML='<div class="n">'+d+'</div>'+(mins>0?'<div class="h">'+hm(mins)+'</div>':'')+(badges?'<div class="badges">'+badges+'</div>':'');
+    el.onclick=()=>{ selectedDay=dateStr; renderDayList(); };
+    grid.appendChild(el);
+  }
+}
+
+function renderDayList(){
+  const d=new Date(selectedDay+'T00:00:00');
+  const todayStr=fmtDate(new Date());
+  document.getElementById('dayTitle').textContent = selectedDay===todayStr ? 'Registros de hoy' : 'Registros del '+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+  const list=document.getElementById('dayList');
+  const dayEntries=entries.filter(e=>e.date===selectedDay).sort((a,b)=>a.start.localeCompare(b.start));
+  list.innerHTML='';
+  if(dayEntries.length===0){
+    list.innerHTML='<div class="empty-msg">Sin registros este día.</div>';
+    return;
+  }
+  const c = dayClassify(selectedDay);
+  if(c.dieta || c.domingoMin>0 || c.allExtra){
+    const tagrow=document.createElement('div'); tagrow.style.cssText='display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;';
+    if(c.dieta) tagrow.innerHTML+='<span class="tag dieta">🍽 Dieta</span>';
+    if(c.domingoMin>0) tagrow.innerHTML+='<span class="tag domingo">🔵 '+hm(c.domingoMin)+' a precio domingo</span>';
+    if(c.allExtra) tagrow.innerHTML+='<span class="tag domingo">Día solo extras'+(c.isSixthSat?' (6º día seguido)':'')+'</span>';
+    list.appendChild(tagrow);
+  }
+  dayEntries.forEach(e=>{
+    const row=document.createElement('div'); row.className='entry';
+    row.innerHTML='<div class="l"><div>'+e.start+' – '+e.end+'</div><div>'+hm(entryMinutes(e))+'</div></div>'+
+      '<div class="r"><button class="icobtn" data-edit="'+e.id+'">✏️</button><button class="icobtn" data-del="'+e.id+'">🗑️</button></div>';
+    list.appendChild(row);
+  });
+  list.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEntry(b.dataset.edit));
+  list.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ if(confirm('¿Borrar este registro?')){ entries=entries.filter(x=>x.id!==b.dataset.del); save(); render(); } });
+}
+
+// Clock in/out
+document.getElementById('btnToggle').onclick=()=>{
+  if(!active){
+    active={start:Date.now()};
+    saveActive(); render();
+  } else {
+    const endTime=new Date();
+    const startTime=new Date(active.start);
+    entries.push({
+      id: uid(),
+      date: fmtDate(startTime),
+      start: pad(startTime.getHours())+':'+pad(startTime.getMinutes()),
+      end: pad(endTime.getHours())+':'+pad(endTime.getMinutes())
+    });
+    active=null; saveActive(); save();
+    selectedDay=fmtDate(new Date());
+    render();
+  }
+};
+
+// Calendar nav
+document.getElementById('prevM').onclick=()=>{ viewDate.setMonth(viewDate.getMonth()-1); renderCalendar(); };
+document.getElementById('nextM').onclick=()=>{ viewDate.setMonth(viewDate.getMonth()+1); renderCalendar(); };
+
+// Settings sheet
+const ovSettings=document.getElementById('ovSettings');
+document.getElementById('btnSettings').onclick=()=>{
+  document.getElementById('cfgJornada').value=cfg.jornada;
+  ovSettings.classList.add('open');
+};
+document.getElementById('cancelSettings').onclick=()=>ovSettings.classList.remove('open');
+document.getElementById('saveSettings').onclick=()=>{
+  cfg.jornada=parseFloat(document.getElementById('cfgJornada').value)||8;
+  saveCfg(); ovSettings.classList.remove('open'); render();
+};
+document.getElementById('btnReset').onclick=()=>{
+  if(confirm('Esto borrará TODOS los registros guardados. ¿Continuar?')){
+    entries=[]; active=null; save(); saveActive(); ovSettings.classList.remove('open'); render();
+  }
+};
+
+// Entry sheet (manual add / edit)
+const ovEntry=document.getElementById('ovEntry');
+function openEntry(id){
+  const e = id ? entries.find(x=>x.id===id) : null;
+  document.getElementById('entryTitle').textContent = e ? 'Editar registro' : 'Añadir registro manual';
+  document.getElementById('entryId').value = e ? e.id : '';
+  document.getElementById('entryDate').value = e ? e.date : selectedDay;
+  document.getElementById('entryStart').value = e ? e.start : '09:00';
+  document.getElementById('entryEnd').value = e ? e.end : '17:00';
+  document.getElementById('entryDelete').style.display = e ? 'block' : 'none';
+  ovEntry.classList.add('open');
+}
+document.getElementById('btnManual').onclick=()=>openEntry(null);
+document.getElementById('entryCancel').onclick=()=>ovEntry.classList.remove('open');
+document.getElementById('entrySave').onclick=()=>{
+  const id=document.getElementById('entryId').value;
+  const data={
+    date: document.getElementById('entryDate').value,
+    start: document.getElementById('entryStart').value,
+    end: document.getElementById('entryEnd').value
+  };
+  if(!data.date||!data.start||!data.end){ alert('Completa fecha, entrada y salida.'); return; }
+  if(id){ const e=entries.find(x=>x.id===id); Object.assign(e,data); }
+  else { entries.push(Object.assign({id:uid()},data)); }
+  save(); ovEntry.classList.remove('open'); selectedDay=data.date; render();
+};
+document.getElementById('entryDelete').onclick=()=>{
+  const id=document.getElementById('entryId').value;
+  if(id && confirm('¿Borrar este registro?')){ entries=entries.filter(x=>x.id!==id); save(); ovEntry.classList.remove('open'); render(); }
+};
+
+// Export
+function dailyRows(){
+  const days=[...new Set(entries.map(e=>e.date))].sort();
+  let totDieta=0, totDomingo=0, totMin=0, totExtra=0;
+  const rows=days.map(ds=>{
+    const c=dayClassify(ds);
+    const extra=dayExtraMinutes(c);
+    totMin+=c.totalMin; if(c.dieta) totDieta++; totDomingo+=c.domingoMin; totExtra+=extra;
+    return {Fecha:ds, 'Horas':(c.totalMin/60).toFixed(2), 'H. extra':(extra/60).toFixed(2), 'Dieta':c.dieta?'Sí':'No', 'H. precio domingo':(c.domingoMin/60).toFixed(2), 'Solo extras':c.allExtra?'Sí':'No'};
+  });
+  return {rows, totDieta, totDomingo, totMin, totExtra};
+}
+function csvEscape(v){ v=String(v); return /[",\n;]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+function downloadCsv(filename, rows){
+  const csv = rows.map(r=>r.map(csvEscape).join(';')).join('\r\n');
+  const blob=new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=filename; a.click();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('btnXlsx').onclick=()=>{
+  const entryRows=entries.slice().sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
+  const {rows:dayRows, totDieta, totDomingo, totExtra}=dailyRows();
+  const p=payrollTotals(new Date());
+  const out=[['REGISTROS'],['Fecha','Entrada','Salida','Horas trabajadas']];
+  entryRows.forEach(e=>out.push([e.date, e.start, e.end, (entryMinutes(e)/60).toFixed(2)]));
+  out.push([]); out.push(['DIETAS, HORAS EXTRA Y HORAS A PRECIO DE DOMINGO']);
+  out.push(['Fecha','Horas','H. extra','Dieta','H. precio domingo','Solo extras']);
+  dayRows.forEach(r=>out.push([r.Fecha, r.Horas, r['H. extra'], r.Dieta, r['H. precio domingo'], r['Solo extras']]));
+  out.push(['TOTAL','', (totExtra/60).toFixed(2), totDieta+' dietas', (totDomingo/60).toFixed(2), '']);
+  out.push([]); out.push(['PERIODO DE NÓMINA '+pad(p.start.getDate())+'/'+pad(p.start.getMonth()+1)+' - '+pad(p.end.getDate())+'/'+pad(p.end.getMonth()+1)]);
+  out.push(['Horas totales', (p.totalMin/60).toFixed(2)]);
+  out.push(['Horas extra', (p.extraMin/60).toFixed(2)]);
+  out.push(['Dietas', p.dietas]);
+  downloadCsv('control-horas.csv', out);
+};
+document.getElementById('btnPdf').onclick=()=>{
+  const rows=entries.slice().sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
+  const {rows:dayRows, totDieta, totDomingo, totExtra}=dailyRows();
+  const p=payrollTotals(new Date());
+  let html='<html><head><title>Control de Horas</title><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;margin-bottom:24px;}th,td{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:left;}th{background:#eee;}</style></head><body>';
+  html+='<h2>Control de Horas Trabajadas</h2><table><tr><th>Fecha</th><th>Entrada</th><th>Salida</th><th>Horas</th></tr>';
+  rows.forEach(e=>{ html+='<tr><td>'+e.date+'</td><td>'+e.start+'</td><td>'+e.end+'</td><td>'+(entryMinutes(e)/60).toFixed(2)+'</td></tr>'; });
+  html+='</table>';
+  html+='<h2>Dietas, horas extra y horas a precio de domingo</h2><table><tr><th>Fecha</th><th>Horas</th><th>H. extra</th><th>Dieta</th><th>H. precio domingo</th><th>Solo extras</th></tr>';
+  dayRows.forEach(r=>{ html+='<tr><td>'+r.Fecha+'</td><td>'+r.Horas+'</td><td>'+r['H. extra']+'</td><td>'+r.Dieta+'</td><td>'+r['H. precio domingo']+'</td><td>'+r['Solo extras']+'</td></tr>'; });
+  html+='</table><p><b>Total horas extra: '+hm(totExtra)+' · Total dietas: '+totDieta+' · Total horas a precio de domingo: '+hm(totDomingo)+'</b></p>';
+  html+='<h2>Periodo de nómina ('+pad(p.start.getDate())+'/'+pad(p.start.getMonth()+1)+' - '+pad(p.end.getDate())+'/'+pad(p.end.getMonth()+1)+')</h2>';
+  html+='<p>Horas totales: '+hm(p.totalMin)+' · Horas extra: '+hm(p.extraMin)+' · Dietas: '+p.dietas+'</p>';
+  html+='</body></html>';
+  const w=window.open('','_blank');
+  w.document.write(html); w.document.close(); w.focus(); w.print();
+};
+document.getElementById('btnBackup').onclick=()=>{
+  const data=JSON.stringify({entries,cfg}, null, 2);
+  const blob=new Blob([data], {type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='control-horas-backup.json'; a.click();
+  URL.revokeObjectURL(url);
+};
+
+render();
+setInterval(tick, 1000);
+tick();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
+}
+</script>
+</body>
+</html>
